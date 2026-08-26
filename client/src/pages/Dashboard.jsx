@@ -2,13 +2,16 @@ import { useEffect, useRef, useState } from "react";
 import api from "../api/api";
 import { gsap } from "gsap";
 
-const MAX_FILE_SIZE = 100 * 1024 * 1024;
+const MAX_FILE_SIZE = 110 * 1024 * 1024;
 
 const ALLOWED_TYPES = [
   "application/pdf",
   "image/png",
   "image/jpeg",
   "text/plain",
+  "video/mp4",
+  "video/webm",
+  "video/quicktime",
 ];
 
 const ALLOWED_EXTENSIONS = [
@@ -17,6 +20,9 @@ const ALLOWED_EXTENSIONS = [
   ".jpg",
   ".jpeg",
   ".txt",
+  ".mp4",
+  ".webm",
+  ".mov",
 ];
 
 function Dashboard({ onLogout }) {
@@ -47,30 +53,45 @@ function Dashboard({ onLogout }) {
       const loadedFiles = response.data.data || [];
       setFiles(loadedFiles);
 
-      const imageFiles = loadedFiles.filter(
-        (file) => file.mimeType?.startsWith("image/")
-      );
+const previewableFiles = loadedFiles.filter(
+  (file) =>
+    file.mimeType?.startsWith("image/") ||
+    file.mimeType?.startsWith("video/")
+);
 
-      if (imageFiles.length > 0) {
-        const previewResults = await Promise.all(
-          imageFiles.map(async (file) => {
-            try {
-              const previewResponse = await api.get(`/files/${file._id}/download`);
-              return { id: file._id, url: previewResponse.data.data.downloadUrl };
-            } catch {
-              return { id: file._id, url: null };
-            }
-          })
+if (previewableFiles.length > 0) {
+  const previewResults = await Promise.all(
+    previewableFiles.map(async (file) => {
+      try {
+        const previewResponse = await api.get(
+          `/files/${file._id}/download`
         );
 
-        const previewMap = {};
-        previewResults.forEach((item) => {
-          if (item.url) previewMap[item.id] = item.url;
-        });
-        setPreviewUrls(previewMap);
-      } else {
-        setPreviewUrls({});
+        return {
+          id: file._id,
+          url: previewResponse.data.data.downloadUrl,
+        };
+      } catch {
+        return {
+          id: file._id,
+          url: null,
+        };
       }
+    })
+  );
+
+  const previewMap = {};
+
+  previewResults.forEach((item) => {
+    if (item.url) {
+      previewMap[item.id] = item.url;
+    }
+  });
+
+  setPreviewUrls(previewMap);
+} else {
+  setPreviewUrls({});
+}
     } catch (error) {
       if (error.response?.status === 401) {
         onLogout();
@@ -141,7 +162,7 @@ function Dashboard({ onLogout }) {
     const validExtension = ALLOWED_EXTENSIONS.includes(extension);
 
     if (!validMimeType && !validExtension) {
-      return "Only PDF, PNG, JPG/JPEG, and TXT files are allowed.";
+return "Only PDF, PNG, JPG/JPEG, TXT, MP4, WEBM, and MOV files are allowed.";
     }
     return "";
   };
@@ -286,13 +307,12 @@ function Dashboard({ onLogout }) {
     return fileName.split(".").pop().toUpperCase();
   };
 
-  const isImage = (file) => file.mimeType?.startsWith("image/");
-  const isPdf = (file) => file.mimeType === "application/pdf";
-  const isText = (file) => file.mimeType === "text/plain";
+const isImage = (file) => file.mimeType?.startsWith("image/");
+const isVideo = (file) => file.mimeType?.startsWith("video/");
+const isPdf = (file) => file.mimeType === "application/pdf";
+const isText = (file) => file.mimeType === "text/plain";
 
-  /* =========================================================
-     RENDER
-  ========================================================= */
+
 
   return (
     <div className="relative min-h-screen overflow-x-hidden bg-[#03050d] text-slate-200 font-sans">
@@ -347,7 +367,6 @@ function Dashboard({ onLogout }) {
         <div ref={statsRef} className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
           {[
             { label: "Total Files", value: files.length, color: "cyan" },
-            { label: "Storage Used", value: formatBytes(totalSize), color: "blue" },
             { label: "Public Access", value: publicCount, color: "purple" },
             { label: "Private Vault", value: privateCount, color: "emerald" },
           ].map((stat, idx) => (
@@ -386,7 +405,7 @@ function Dashboard({ onLogout }) {
               </div>
               <h3 className="text-xl font-extrabold text-white">Upload File</h3>
               <p className="mt-2 text-xs leading-relaxed text-slate-400">
-                Supported formats: PDF, PNG, JPG/JPEG, TXT.<br />Max size: <span className="text-cyan-400 font-bold">100 MB</span>.
+                Supported formats: PDF, PNG, JPG/JPEG, TXT, MP4, WEBM, MOV.<br />Max size: <span className="text-cyan-400 font-bold">100 MB</span>.
               </p>
             </div>
 
@@ -400,7 +419,7 @@ function Dashboard({ onLogout }) {
                 {uploading ? "Transmitting Data..." : "Select File for Upload"}
               </p>
               <p className="mt-1 text-[10px] text-slate-500 font-semibold uppercase tracking-wider">Browse Device</p>
-              <input type="file" onChange={handleUpload} disabled={uploading} accept=".pdf,.png,.jpg,.jpeg,.txt" hidden />
+              <input type="file" onChange={handleUpload} disabled={uploading}accept=".pdf,.png,.jpg,.jpeg,.txt,.mp4,.webm,.mov" hidden />
             </label>
 
             {uploading && (
@@ -458,19 +477,53 @@ function Dashboard({ onLogout }) {
                       
                       {/* --- Visual Preview Header --- */}
                       <div className="relative aspect-video w-full overflow-hidden bg-[#02050a] border-b border-slate-800/50">
-                        {isImage(file) && previewUrls[file._id] ? (
-                          <>
-                            <img src={previewUrls[file._id]} alt={file.originalName} className="h-full w-full object-cover opacity-80 transition duration-700 group-hover:scale-105 group-hover:opacity-100" />
-                            <div className="absolute inset-0 bg-gradient-to-t from-[#0a1220]/90 via-transparent to-transparent" />
-                          </>
-                        ) : (
-                          <div className={`flex h-full w-full flex-col items-center justify-center bg-gradient-to-br ${isPdf(file) ? 'from-red-500/10' : isText(file) ? 'from-cyan-500/10' : 'from-purple-500/10'} via-[#050b14] to-[#02050a]`}>
-                             <div className={`flex h-14 w-14 items-center justify-center rounded-2xl border ${isPdf(file) ? 'border-red-500/20 bg-red-500/10 text-red-400' : isText(file) ? 'border-cyan-500/20 bg-cyan-500/10 text-cyan-400' : 'border-purple-500/20 bg-purple-500/10 text-purple-400'}`}>
-                                <span className="text-sm font-extrabold uppercase tracking-wider">{getFileExtension(file.originalName)}</span>
-                             </div>
-                          </div>
-                        )}
+                   {isImage(file) && previewUrls[file._id] ? (
+  <>
+    <img
+      src={previewUrls[file._id]}
+      alt={file.originalName}
+      className="h-full w-full object-cover opacity-80 transition duration-700 group-hover:scale-105 group-hover:opacity-100"
+    />
 
+    <div className="absolute inset-0 bg-gradient-to-t from-[#0a1220]/90 via-transparent to-transparent" />
+  </>
+) : isVideo(file) && previewUrls[file._id] ? (
+  <div className="relative h-full w-full bg-black">
+    <video
+      src={previewUrls[file._id]}
+      controls
+      playsInline
+      preload="metadata"
+      className="h-full w-full object-contain"
+    />
+
+    <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-[#0a1220]/40 via-transparent to-transparent" />
+  </div>
+) : (
+  <div
+    className={`flex h-full w-full flex-col items-center justify-center bg-gradient-to-br ${
+      isPdf(file)
+        ? "from-red-500/10"
+        : isText(file)
+        ? "from-cyan-500/10"
+        : "from-purple-500/10"
+    } via-[#050b14] to-[#02050a`}
+  >
+    <div
+      className={`flex h-14 w-14 items-center justify-center rounded-2xl border ${
+        isPdf(file)
+          ? "border-red-500/20 bg-red-500/10 text-red-400"
+          : isText(file)
+          ? "border-cyan-500/20 bg-cyan-500/10 text-cyan-400"
+          : "border-purple-500/20 bg-purple-500/10 text-purple-400"
+      }`}
+    >
+      <span className="text-sm font-extrabold uppercase tracking-wider">
+        {getFileExtension(file.originalName)}
+      </span>
+    </div>
+  </div>
+)}
                         {/* Privacy Badge overlayed on image */}
                         <div className="absolute right-3 top-3 flex items-center gap-1.5 rounded-full border border-white/10 bg-black/60 px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-white backdrop-blur-md">
                           <span className={`h-1.5 w-1.5 rounded-full ${file.isPublic ? 'bg-purple-400 shadow-[0_0_5px_#a855f7]' : 'bg-emerald-400 shadow-[0_0_5px_#34d399]'}`} />
@@ -523,7 +576,7 @@ function Dashboard({ onLogout }) {
                             ) : (
                               <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
                             )}
-                            <span className="hidden sm:inline lg:hidden xl:inline">DL</span>
+                           
                           </button>
 
                           {/* Visibility Toggle Button */}

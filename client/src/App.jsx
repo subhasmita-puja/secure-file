@@ -3,6 +3,7 @@ import { useState } from "react";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
+import PublicShare from "./pages/PublicShare";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
@@ -10,6 +11,11 @@ function App() {
   );
 
   const [showRegister, setShowRegister] = useState(false);
+
+  const currentPath = window.location.pathname;
+
+  const isPublicShare =
+    currentPath.startsWith("/share/");
 
   const handleLogin = () => {
     setIsAuthenticated(true);
@@ -21,6 +27,13 @@ function App() {
     setIsAuthenticated(false);
     setShowRegister(false);
   };
+
+  /*
+   * Public share links must work without authentication.
+   */
+  if (isPublicShare) {
+    return <PublicShare />;
+  }
 
   if (isAuthenticated) {
     return <Dashboard onLogout={handleLogout} />;

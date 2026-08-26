@@ -1,19 +1,29 @@
 const {
-  PutObjectCommand,
-   GetObjectCommand,
-    DeleteObjectCommand,
+  GetObjectCommand,
+  DeleteObjectCommand,
 } = require("@aws-sdk/client-s3");
+
+const {
+  Upload,
+} = require("@aws-sdk/lib-storage");
 
 const {
   getSignedUrl,
 } = require("@aws-sdk/s3-request-presigner");
 
 const crypto = require("crypto");
+const fs = require("fs");
 
 const s3Client = require("../config/s3");
 const File = require("../models/File");
 
+/* =========================================================
+   UPLOAD FILE
+========================================================= */
+
 const uploadFile = async (req, res, next) => {
+  let temporaryFilePath = null;
+
   try {
     if (!req.file) {
       return res.status(400).json({
@@ -22,31 +32,80 @@ const uploadFile = async (req, res, next) => {
       });
     }
 
+    temporaryFilePath = req.file.path;
+
     const fileId = crypto.randomUUID();
 
-    const storageKey = `users/${req.user.userId}/${fileId}/${req.file.originalname}`;
+    /*
+     * Keep the original filename in MongoDB,
+     * but use a generated UUID-based S3 key.
+     *
+     * This avoids unsafe filenames and collisions.
+     */
+    const extension = req.file.originalname.includes(".")
+      ? `.${req.file.originalname
+          .split(".")
+          .pop()
+          .toLowerCase()}`
+      : "";
+
+    const storageKey =
+      `users/${req.user.userId}/${fileId}${extension}`;
 
     const shareToken = crypto.randomUUID();
 
-    const command = new PutObjectCommand({
-      Bucket: process.env.AWS_S3_BUCKET_NAME,
-      Key: storageKey,
-      Body: req.file.buffer,
-      ContentType: req.file.mimetype,
-      ServerSideEncryption: "AES256",
+    /*
+     * S3 Multipart Upload
+     *
+     * Files are uploaded in parts instead of loading
+     * the complete file into Node.js memory.
+     */
+    const upload = new Upload({
+      client: s3Client,
+
+      params: {
+        Bucket: process.env.AWS_S3_BUCKET_NAME,
+        Key: storageKey,
+        Body: fs.createReadStream(
+          temporaryFilePath
+        ),
+        ContentType: req.file.mimetype,
+        ServerSideEncryption: "AES256",
+      },
+
+      /*
+       * 10 MB parts provide good support for
+       * large uploads.
+       */
+      partSize: 10 * 1024 * 1024,
+
+      /*
+       * Upload up to 4 parts concurrently.
+       */
+      queueSize: 4,
+
+      /*
+       * If the upload fails, remove incomplete
+       * multipart upload parts from S3.
+       */
+      leavePartsOnError: false,
     });
 
-    await s3Client.send(command);
+    await upload.done();
 
-const file = await File.create({
-  originalName: req.file.originalname,
-  storageKey,
-  mimeType: req.file.mimetype,
-  size: req.file.size,
-  owner: req.user.userId,
-  isPublic: false,
-  shareToken,
-});
+    /*
+     * Store metadata only after S3 upload
+     * has completed successfully.
+     */
+    const file = await File.create({
+      originalName: req.file.originalname,
+      storageKey,
+      mimeType: req.file.mimetype,
+      size: req.file.size,
+      owner: req.user.userId,
+      isPublic: false,
+      shareToken,
+    });
 
     return res.status(201).json({
       success: true,
@@ -61,8 +120,21 @@ const file = await File.create({
     });
   } catch (error) {
     next(error);
+  } finally {
+    /*
+     * Always remove the temporary local file.
+     */
+    if (temporaryFilePath) {
+      fs.promises
+        .unlink(temporaryFilePath)
+        .catch(() => {});
+    }
   }
 };
+
+/* =========================================================
+   LIST FILES
+========================================================= */
 
 const listFiles = async (req, res, next) => {
   try {
@@ -80,6 +152,10 @@ const listFiles = async (req, res, next) => {
     next(error);
   }
 };
+
+/* =========================================================
+   GET PRIVATE DOWNLOAD URL
+========================================================= */
 
 const getDownloadUrl = async (req, res, next) => {
   try {
@@ -122,6 +198,10 @@ const getDownloadUrl = async (req, res, next) => {
   }
 };
 
+/* =========================================================
+   DELETE FILE
+========================================================= */
+
 const deleteFile = async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -159,7 +239,15 @@ const deleteFile = async (req, res, next) => {
   }
 };
 
-const toggleFileVisibility = async (req, res, next) => {
+/* =========================================================
+   TOGGLE PUBLIC / PRIVATE
+========================================================= */
+
+const toggleFileVisibility = async (
+  req,
+  res,
+  next
+) => {
   try {
     const { id } = req.params;
 
@@ -187,7 +275,9 @@ const toggleFileVisibility = async (req, res, next) => {
       data: {
         id: file._id,
         isPublic: file.isPublic,
-        shareToken: file.isPublic ? file.shareToken : null,
+        shareToken: file.isPublic
+          ? file.shareToken
+          : null,
       },
     });
   } catch (error) {
@@ -195,7 +285,15 @@ const toggleFileVisibility = async (req, res, next) => {
   }
 };
 
-const getPublicFile = async (req, res, next) => {
+/* =========================================================
+   PUBLIC FILE
+========================================================= */
+
+const getPublicFile = async (
+  req,
+  res,
+  next
+) => {
   try {
     const { shareToken } = req.params;
 
@@ -239,11 +337,13 @@ const getPublicFile = async (req, res, next) => {
   }
 };
 
+
+
 module.exports = {
   uploadFile,
   listFiles,
-   getDownloadUrl,
-     deleteFile,
-      toggleFileVisibility,
-       getPublicFile,
+  getDownloadUrl,
+  deleteFile,
+  toggleFileVisibility,
+  getPublicFile,
 };

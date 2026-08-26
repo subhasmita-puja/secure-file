@@ -111,7 +111,7 @@ function Register({ onLogin }) {
     try {
       await api.post("/auth/register", form);
       
-      setSuccess("Node registered successfully. Uplink authorized.");
+      setSuccess("Registered successfully. Uplink authorized.");
       setRegStatus("success");
       setForm({ name: "", email: "", password: "" });
 
@@ -261,7 +261,7 @@ function Register({ onLogin }) {
         >
           <div className="mb-8">
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-cyan-300 to-blue-500">
-              Create Node
+              Register
             </h1>
             <p className="text-cyan-600/70 mt-2 text-xs sm:text-sm font-semibold tracking-widest uppercase">
               Encrypted File Storage Access
@@ -289,7 +289,7 @@ function Register({ onLogin }) {
 
             <div className="space-y-2 relative group">
               <label htmlFor="email" className="text-xs font-bold text-cyan-500 uppercase tracking-wider">
-                Node ID (Email)
+               Email
               </label>
               <div className="relative">
                 <input
@@ -353,7 +353,7 @@ function Register({ onLogin }) {
                     Registering...
                   </>
                 ) : (
-                  "Initialize Node"
+                  "Register"
                 )}
               </span>
             </button>

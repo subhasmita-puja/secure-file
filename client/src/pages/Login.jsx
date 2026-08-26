@@ -138,8 +138,7 @@ function Login({ onLogin, onRegister }) {
         <div className="absolute top-1/3 w-[500px] h-[500px] bg-blue-600/15 rounded-full blur-[120px]"></div>
         <div className="absolute bottom-10 w-[600px] h-[300px] bg-purple-700/15 rounded-full blur-[150px]"></div>
 
-        {/* Purple Neon Halo (Backdrop) */}
-        <div className="absolute top-1/4 w-[350px] sm:w-[450px] h-[175px] sm:h-[225px] border-[3px] border-purple-500 rounded-t-full shadow-[0_0_40px_#a855f7,inset_0_0_20px_#a855f7] opacity-80"></div>
+       
 
         {/* Center Floating Composition (Cloud + Lock) */}
         <div ref={visualStateRef} className="relative z-10 flex flex-col items-center justify-center mt-[-60px] scale-75 sm:scale-100">
