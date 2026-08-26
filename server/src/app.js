@@ -16,10 +16,9 @@ app.use(helmet());
 // Allow frontend to communicate with backend
 app.use(
   cors({
-    origin: "http://localhost:5174",
+    origin: process.env.CLIENT_URL || "http://localhost:5174",
   })
 );
-
 // Parse JSON request bodies
 app.use(express.json());
 
