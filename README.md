@@ -559,7 +559,3 @@ Optional: Make Private again
 - Repository: https://github.com/subhasmita-puja/secure-file
 
 ---
-
-## 📄 License
-
-This project was developed as an assessment/project submission. Add a specific open-source license if the repository is intended for public reuse.
