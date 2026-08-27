@@ -106,7 +106,7 @@ function Login({ onLogin, onRegister }) {
       const response = await api.post("/auth/login", form);
       const token = response.data.data.token;
       
-      localStorage.setItem("token", token);
+      sessionStorage.setItem("token", token);
       
       setTimeout(() => {
         setAuthStatus("success");

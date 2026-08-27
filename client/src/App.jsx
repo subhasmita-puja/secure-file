@@ -7,7 +7,7 @@ import PublicShare from "./pages/PublicShare";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(
-    Boolean(localStorage.getItem("token"))
+    Boolean(sessionStorage.getItem("token"))
   );
 
   const [showRegister, setShowRegister] = useState(false);
@@ -23,7 +23,7 @@ function App() {
   };
 
   const handleLogout = () => {
-    localStorage.removeItem("token");
+ sessionStorage.removeItem("token");
     setIsAuthenticated(false);
     setShowRegister(false);
   };
