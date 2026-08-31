@@ -271,7 +271,7 @@ const [showPassword, setShowPassword] = useState(false);
           <form onSubmit={handleSubmit} className="space-y-5">
             <div className="space-y-2 relative group">
               <label htmlFor="name" className="text-xs font-bold text-cyan-500 uppercase tracking-wider">
-                Operator Name
+                Name
               </label>
               <div className="relative">
                 <input
