@@ -111,7 +111,7 @@ const [showPassword, setShowPassword] = useState(false);
     try {
       await api.post("/auth/register", form);
       
-      setSuccess("Registered successfully. Uplink authorized.");
+      setSuccess("Registered successfully.");
       setRegStatus("success");
       setForm({ name: "", email: "", password: "" });
 
@@ -249,9 +249,9 @@ const [showPassword, setShowPassword] = useState(false);
           ref={floatingLockRef} 
           className="absolute top-0 left-0 w-8 h-8 z-50 pointer-events-none drop-shadow-[0_0_12px_rgba(34,211,238,0.9)]"
         >
-          <svg className="w-full h-full text-cyan-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          {/* <svg className="w-full h-full text-cyan-400 animate-pulse" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-          </svg>
+          </svg> */}
         </div>
 
         {/* Form Container */}
@@ -307,7 +307,7 @@ const [showPassword, setShowPassword] = useState(false);
 
        <div className="space-y-2 relative group">
               <label htmlFor="password" className="text-xs font-bold text-cyan-500 uppercase tracking-wider">
-                Access Key (Min 8 Chars)
+                Password (Min 8 Chars)
               </label>
               <div className="relative">
                 <input
@@ -391,7 +391,7 @@ const [showPassword, setShowPassword] = useState(false);
               >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
               </svg>
-              Return to Uplink (Login)
+              Return to Login
             </button>
           </div>
         </div>

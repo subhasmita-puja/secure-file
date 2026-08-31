@@ -89,7 +89,7 @@ function Sidebar({ activePage, onNavigate, onLogout }) {
           SECURE STORAGE
         </p>
         <p className="text-[9px] uppercase tracking-[0.2em] text-cyan-700 font-bold">
-          Encrypted Node
+          Encrypted
         </p>
       </div>
     </div>
